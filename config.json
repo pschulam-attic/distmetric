@@ -1,0 +1,27 @@
+{
+    "sclero_datadir" : "/Users/pschulam/Data/sclerodata",
+
+    "data_input" : "data/input",
+    "data_work" : "data/work",
+    "data_output" : "data/output",
+    
+    "patient" : {
+	"in" : "tPtData.csv",
+	"out" : "patient.csv"
+    },
+    
+    "clinic" : {
+	"in" : "tVisit.csv",
+	"out" : "clinic.csv"
+    },
+
+    "pft" : {
+	"in" : "tPFT.csv",
+	"out" : "pft.csv"
+    },
+
+    "sero" : {
+	"in" : "tSero.csv",
+	"out" : "sero.csv"
+    }
+}
