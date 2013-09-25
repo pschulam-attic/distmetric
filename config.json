@@ -23,5 +23,7 @@
     "sero" : {
 	"in" : "tSero.csv",
 	"out" : "sero.csv"
-    }
+    },
+
+    "cross_sectional_data" : "cross_sec.mat"
 }
