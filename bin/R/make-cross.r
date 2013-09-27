@@ -171,6 +171,56 @@ pft <- rename(pft,
 pft <- na.omit(pft)
 
 #---------------------------------------------------------------------
+# Serology results
+#---------------------------------------------------------------------
+
+sero.data <-
+    read.csv(file.path(config$data_input, config$sero[["out"]]),
+             stringsAsFactors = FALSE)
+sero.data <-
+    transform(sero.data,
+              ana = factor(ana, levels = 0:1),
+              aca = factor(aca, levels = 0:1),
+              scl.70 = factor(scl.70, levels = 0:1),
+              ro = factor(ro, levels = 0:1),
+              la = factor(la, levels = 0:1),
+              rnp = factor(rnp, levels = 0:1),
+              sm = factor(sm, levels = 0:1),
+              dna = factor(dna, levels = 0:1),
+              rna.poly = factor(rna.poly, levels = 0:1))
+
+is_bl <- is.date.within(365, sero.data$patient_id, sero.data$date)
+sero.baseline <- sero.data[is_bl, c("patient_id", "aca", "scl.70")]
+
+sero.baseline.m <-
+    melt(sero.baseline,
+         id.vars = "patient_id")
+
+sero.base.sum <-
+    ddply(sero.baseline.m,
+          ~ patient_id + variable,
+          function(df) {
+              v = na.omit(df$value)
+
+              if (length(v) > 0) {
+                  data.frame(base_value = max(v))
+              } else {
+                  data.frame()
+              }
+          })
+
+sero <- dcast(sero.base.sum, patient_id ~ variable, value.var = "base_value")
+
+names(sero) <- c(names(sero)[-3], "scl_70")
+
+sero <- na.omit(sero)
+
+sero <-
+    transform(sero,
+              aca = factor(aca, levels = 0:1),
+              scl_70 = factor(scl_70, levels = 0:1))
+
+#---------------------------------------------------------------------
 # Get lifetime worst measurements
 #---------------------------------------------------------------------
 
@@ -226,6 +276,8 @@ final.data <-
     })
 
 final.data <- subset(final.data, gi_severity != 4)  # Only one person has GI = 4
+
+final.data <- merge(final.data, sero, by = "patient_id", all.x = TRUE)
 
 dir.create(config$data_work, showWarnings = FALSE)
 cross_file <- file.path(config$data_work, config$cross_sectional_data)
