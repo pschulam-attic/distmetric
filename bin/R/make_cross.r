@@ -24,6 +24,15 @@ patient.data <- read.csv(
     stringsAsFactors = FALSE
     )
 
+patient.data <-
+    transform(patient.data,
+              afr.am = ifelse(race1 == 2, 1, 0))
+
+patient.data <-
+    subset(patient.data,
+           smoker != 9,
+           select = -c(race1, race2, ethnicity))
+
 first.seen <- local({
     patient.to.date <- with(patient.data, {
         structure(as.Date(date_first_seen), names = patient_id)
@@ -142,21 +151,28 @@ pft.data <- subset(pft.data, select = -c(fvc, fev1, tlc, dlco))
 is_bl <- is.date.within(365, pft.data$patient_id, pft.data$date)
 pft.baseline <- pft.data[is_bl, ]
 
-pft.baseline.m <- melt(
-    pft.baseline,
-    id.vars = c("patient_id", "date")
-    )
+pft.baseline.m <-
+    melt(pft.baseline,
+         id.vars = c("patient_id", "date"))
 
-pft.base.sum <- ddply(
-    pft.baseline.m,
-    ~ patient_id + variable,
-    summarize,
-    base_value = summarize.baseline(value)
-    )
+pft.base.sum <-
+    ddply(pft.baseline.m,
+          ~ patient_id + variable,
+          summarize,
+          base_value = summarize.baseline(value))
 
 pft <- dcast(pft.base.sum, patient_id ~ variable, value.var = "base_value")
+pft <- rename(pft,
+              list(pfvc = "base_pfvc",
+                   pfev1 = "base_pfev1",
+                   ptlc = "base_ptlc",
+                   pdlco = "base_pdlco"))
 
 pft <- na.omit(pft)
+
+#---------------------------------------------------------------------
+# Get lifetime worst measurements
+#---------------------------------------------------------------------
 
 is_lt_low <- is.date.outside(365 * 2, pft.data$patient_id, pft.data$date)
 is_lt_high <- is.date.within(365 * 7, pft.data$patient_id, pft.data$date)
@@ -164,7 +180,10 @@ is_lt <- is_lt_low & is_lt_high
 pft.lifetime <- pft.data[is_lt, ]
 
 worst.data <- ddply(
-    melt(pft.lifetime, id.vars = c("patient_id", "date")),
+    melt(
+        pft.lifetime,
+        id.vars = c("patient_id", "date"),
+        measure.vars = c("pfvc", "pfev1", "ptlc", "pdlco")),
     ~ patient_id + variable,
     function(df) {
         v <- na.omit(df$value)
@@ -175,11 +194,13 @@ worst.data <- ddply(
         } else {
             data.frame()
         }
-    }
-    )
+    })
 
 worst.data <- dcast(worst.data, patient_id ~ variable, value.var = "worst")
-
+worst.names <- names(worst.data)
+names(worst.data) <-
+    c(worst.names[1],
+      vapply(worst.names[-1], function(n) paste0("worst_", n),character(1)))
 worst.data <- na.omit(worst.data)
 
 # Unify the data sets
@@ -188,3 +209,24 @@ p1 <- unique(patient.data$patient_id)
 p2 <- unique(clinic$patient_id)
 p3 <- unique(pft$patient_id)
 p4 <- unique(worst.data$patient_id)
+
+patient_ids <- Reduce(intersect, list(p1, p2, p3, p4))
+
+final.data <-
+    Reduce(
+        function(d1, d2) merge(d1, d2, by = "patient_id"),
+        lapply(
+            list(patient.data, clinic, pft, worst.data),
+            function(d) subset(d, patient_id %in% patient_ids)))
+
+final.data <-
+    local({
+        n <- names(final.data)
+        final.data[, -grep("date_", n)]
+    })
+
+final.data <- subset(final.data, gi_severity != 4)  # Only one person has GI = 4
+
+dir.create(config$data_work, showWarnings = FALSE)
+cross_file <- file.path(config$data_work, config$cross_sectional_data)
+write.csv(final.data, file = cross_file, row.names = FALSE)
