@@ -25,5 +25,12 @@
 	"out" : "sero.csv"
     },
 
-    "cross_sectional_data" : "cross_sec.mat"
+    "cross_sectional_data" : "cross_sec.csv",
+
+    "plots" : {
+	"dir" : "data/output",
+	"ext" : ".pdf",
+	"base-vs-worst" : "base-vs-worst",
+	"linear-model-residuals" : "linear-model-residuals"
+    }
 }
