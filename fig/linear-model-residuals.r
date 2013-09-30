@@ -24,6 +24,9 @@ glmfit <-
        sex +
        afr.am +
        smoker +
+       height +
+       weight +
+       age +
        total_skin +
        rp_severity +
        gi_severity +
@@ -36,7 +39,7 @@ glmfit <-
 require(boot)
 
 cv_results <- cv.glm(data, glmfit)
-cat(sprintf("LOOCV MSE = %f", cv_results$delta[1]))
+cat(sprintf("LOOCV MSE = %f", cv_results$delta[2]))
 
 nplots <- 0
 dir.create(config$plots$dir, showWarnings = FALSE)
@@ -51,7 +54,8 @@ plot_name <- function(plot_num) {
 #---------------------------------------------------------------------
 
 p <- qplot(resid(glmfit))
-p + labs(title = "Residuals of Linear Model")
+title <- sprintf("Residuals of Linear Model (LOOCV MSE = %f)", cv_results$delta[2])
+p + labs(title = title)
 nplots <- nplots + 1
 
 ggsave(plot_name(nplots))
