@@ -1,4 +1,4 @@
-dist2 <- function(X, method, A) {
+nwdist <- function(X, method, A) {
   
   mdist <- function(i) {
     d <- rep(0, nrow(X))
@@ -9,11 +9,12 @@ dist2 <- function(X, method, A) {
   if (method == "mahalanobis") {
     t(sapply(1:nrow(X), mdist))
   } else {
-    dist(X, method=method)
+    as.matrix(dist(X, method=method))
   }
 }
 
-nadarayawatson <- function(X, Y, D) {
+nadarayawatson <- function(X, Y, dmethod="euclidean", A=NULL) {
+  D <- nwdist(X, dmethod, A)
 
   smoother <- function(h) {
     L <- exp(-D / h)
@@ -37,41 +38,43 @@ nadarayawatson <- function(X, Y, D) {
       D = D,
       h = h,
       L = L,
-      loocvmse = loo_mse[order(loo_mse)][1]
+      loocvmse = loo_mse[order(loo_mse)][1],
+      dmethod = dmethod,
+      A = A
       ), class = "nadarayawatson")
 }
 
-predict.nadarayawatson <- function(nwfit) {
-  L <- nwfit$L
-  Y <- nwfit$Y
-  as.numeric(L %*% Y)
-}
+predict.nadarayawatson <- function(nwfit, newdata=NULL, se=FALSE) {
 
-loocv_mse <- function(nw) {
-  lcv <- nw$loocvs
-  lcv <- lcv[!is.nan(lcv)]
-  min(lcv, na.rm=TRUE)
-}
-
-stderr <- function(nwfit, nboot=500) {
-  n <- length(nwfit$Y)
-  means <- rep(0, n)
-  stderrs <- rep(0, n)
-
-  for (i in seq_len(n)) {
-    bootfn <- function() {
-      idx <- sample(n-1, n-1, replace=TRUE)
-      d <- nwfit$D[i, -i][idx]
-      w <- d / sum(d)
-      y <- nwfit$Y[-i][idx]
-      
-      sum(w * y)
-    }
-
-    b <- replicate(nboot, bootfn())
-    means[i] <- mean(b)
-    stderrs[i] <- sd(b)
+  nwboot <- function(df, idx) {
+    df <- df[idx, ]
+    w <- exp(-df$d / nwfit$h)
+    l <- w / sum(w)
+    sum(l * df$Y)
   }
 
-  list(means=means, stderrs=stderrs)
+  make_pred <- function(newx, X, Y) {
+    X <- rbind(newx, X)
+    d <- nwdist(X, nwfit$dmethod, nwfit$A)[1, -1]
+    w <- exp(-d / nwfit$h)
+    l <- w / sum(w)
+
+    p <- sum(l * Y)
+
+    if (se) {
+      require(boot)
+      s <- boot(data.frame(d=d, Y=Y), nwboot, R=1000)
+      data.frame(prediction=p, se=sd(s$t))
+    } else {
+      data.frame(prediction=p)
+    }
+  }
+
+  n <- nrow(nwfit$X)
+  preds <-
+      do.call(rbind,
+              lapply(1:n, function(i) {
+                make_pred(X[i, ], X[-i, ], Y[-i])
+              }))
+  preds
 }
