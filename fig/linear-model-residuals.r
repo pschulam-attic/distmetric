@@ -24,6 +24,7 @@ glmfit <-
        sex +
        afr.am +
        smoker +
+       total_skin +
        rp_severity +
        gi_severity +
        base_pfvc +
