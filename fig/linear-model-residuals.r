@@ -59,3 +59,15 @@ p + labs(title = title)
 nplots <- nplots + 1
 
 ggsave(plot_name(nplots))
+
+#---------------------------------------------------------------------
+#' Plot 2: Standard errors of fit values 
+#---------------------------------------------------------------------
+
+results <- predict(glmfit, se.fit=TRUE)
+p <- qplot(results$se.fit * results$residual.scale)
+title <- sprintf("Fit Standard Errors")
+p + labs(title = title)
+nplots <- nplots + 1
+
+ggsave(plot_names(nplots))
