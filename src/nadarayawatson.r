@@ -44,6 +44,12 @@ nadarayawatson <- function(X, Y, disttype="euclidean", A) {
   structure(list(X=X, Y=Y, h=h, loocvs=loocvs, L=L), class="nadarayawatson")
 }
 
+predict.nadarayawatson <- function(nwfit) {
+  L <- nwfit$L
+  Y <- nwfit$Y
+  as.numeric(L %*% Y)
+}
+
 loocv_mse <- function(nw) {
   lcv <- nw$loocvs
   lcv <- lcv[!is.nan(lcv)]
