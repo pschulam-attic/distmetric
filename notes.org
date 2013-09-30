@@ -1,0 +1,33 @@
+* Information Theoretic Metric Learning
+
+** Big question
+
+What is the best way to learn distance metrics across a wide variety of constraint types that will generalize well to unseen data and scale.
+
+** Five sentence summary
+
+Distance metric learning is a powerful technique for improving k-NN methods when label information is available.
+A metric learning algorithm should allow a flexible class of constraints, provide strong generalization performance, and should be scalable.
+Existing methods do not satisfy all of these conditions, and so they propose a method that learns a function in the class of Mahalanobis distances.
+They relate the distance metric problem to the problem of learning a Gaussian that maximizes an entropic objective function.
+They make connections between their method and a low-rank kernel learning problem, which allows optimization over a larger class of non-linear distance functions, and also implies an efficient solution.
+
+** Specific questions
+
+
+
+** Approach
+
+** Experiments
+
+** Results/analysis
+
+** To lookup
+
+low-rank kernel learning
+
+LogDet divergence
+
+semi-definite programming
+
+regret bounds
